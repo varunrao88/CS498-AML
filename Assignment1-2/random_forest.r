@@ -105,11 +105,18 @@ rf <- h2o.randomForest(y = "Label", training_frame = as.h2o(rtrdf) ,ntrees = ntr
 
 predictions<-as.data.frame(h2o.predict(rf,as.h2o(rtedf)))
 
-print(sum(predictions$predict == ted$y)/length(ted$y))
+sum(predictions$predict == ted$y)/length(ted$y)
 }
 
-
-
+pred1 <- calc_rf(10,4)
+pred2 <- calc_rf(10,8)
+pred3 <- calc_rf(10,16)
+pred4 <- calc_rf(20,4)
+pred5 <- calc_rf(20,8)
+pred6 <- calc_rf(20,16)
+pred7 <- calc_rf(30,4)
+pred8 <- calc_rf(30,8)
+pred9 <- calc_rf(30,16)
 
 
 
