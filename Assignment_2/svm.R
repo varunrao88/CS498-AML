@@ -1,6 +1,29 @@
 library(klaR)
 library(caret)
 
+get_accuracy <- function(a,b,data_to_check,labels_to_check){
+  
+  calc_labels <- c()
+  
+  for(j in 1:nrow(data_to_check)){
+    
+    calc_val <-  ( as.matrix(data_to_check[j,]) %*% t(a) ) + b 
+    if(calc_val > 0){
+      calc_labels <- c(calc_labels, 1)
+    }
+    else{
+    calc_labels <- c(calc_labels, -1)
+    }
+  }
+  
+  checker <- calc_labels == labels_to_check
+  
+  acc <- sum(checker) / length(labels_to_check)
+  return(acc)
+  
+}
+
+
 #Data Merge
 ad <- read.csv("adult.data", header=FALSE) #Adult Data
 adt <- read.csv("adult.test", header=FALSE) #Adult Data Test
@@ -15,10 +38,10 @@ label <- ad[,15]
 
 #Coverting labels to +1 or -1
 label <- as.character(label)
-label[label ==  " <=50K" ] <- -1
-label[label ==  " <=50K." ] <- -1
-label[ label == " >50K"] <- 1
-label[ label == " >50K."] <- 1 
+label[label ==  " <=50K" ] <- 1
+label[label ==  " <=50K." ] <- 1
+label[ label == " >50K"] <- -1
+label[ label == " >50K."] <- -1 
 label <- as.factor(label)
 
 #For Unit Variance
@@ -45,6 +68,53 @@ test_label <- label[sp2] #Test Labels
 
 val <- temp_data[-sp2,] #Val Set
 val_label <- temp_data[-sp2] # Val Labels
+
+reg_constants <- c(1)
+num_epoch <- 50
+batch_size <- 10
+num_steps <- 300
+
+a <- matrix(rnorm(6), nrow = 1, ncol = 6) #A
+b <- rnorm(1) #B
+main_acc <- c() 
+for(epoch in 1:50){
+
+#pick out 50 numbers
+rand50 <- sample(1:nrow(train), 50 , replace = FALSE)
+
+ho_set_features <- train[rand50,] #Held out set features
+ho_set_labels <- train_label[rand50] # Held out set labels
+
+actual_train_features <- train[-rand50,] #Actual training features
+actual_train_labels <- train_label[-rand50] #Actual training labels 
+
+n <- 1 / ( (0.01 * epoch) + 50 ) #Step length
+
+
+for( i in 1:300 ){ #Steps = 300
+  
+  rand1 <- sample(1:nrow(actual_train_features),1,replace = FALSE)
+  
+  x <- as.matrix(actual_train_features[rand1,]) #Sample
+  
+  y <- as.numeric(actual_train_labels[rand1]) #Sample Label
+  
+  val <- y * ( ( x %*% t(a) ) + b )
+  if(val >= 1){
+    a <- a - (n * (reg_constants[1] * a))
+    b <- b
+  }
+  else{
+    a <- a - (n * (reg_constants*a - (y * x)))
+    b <- b - (n * -y)
+  }
+  
+  if(i%%30 == 0){
+    temp_acc <- get_accuracy(a,b,ho_set_features, ho_set_labels)
+    main_acc <- c(main_acc, temp_acc) 
+  }
+}
+}
 
 
 
