@@ -1,5 +1,6 @@
 library(klaR)
 library(caret)
+library(ggplot2)
 
 get_accuracy <- function(a,b,data_to_check,labels_to_check){
   
@@ -69,10 +70,15 @@ test_label <- label[sp2] #Test Labels
 val <- temp_data[-sp2,] #Val Set
 val_label <- temp_data[-sp2] # Val Labels
 
-reg_constants <- c(1)
+reg_constants <- c(1,0.1,0.01,0.001)
 num_epoch <- 50
 batch_size <- 10
 num_steps <- 300
+
+#Output data
+op_data <- data.frame(Counter=c(1:500))
+
+for(reg in 1:length(reg_constants)){
 
 a <- matrix(rnorm(6), nrow = 1, ncol = 6) #A
 b <- rnorm(1) #B
@@ -101,11 +107,11 @@ for( i in 1:300 ){ #Steps = 300
   
   val <- y * ( ( x %*% t(a) ) + b )
   if(val >= 1){
-    a <- a - (n * (reg_constants[1] * a))
+    a <- a - (n * (reg_constants[reg] * a))
     b <- b
   }
   else{
-    a <- a - (n * (reg_constants*a - (y * x)))
+    a <- a - (n * (reg_constants[reg]*a - (y * x)))
     b <- b - (n * -y)
   }
   
@@ -116,9 +122,10 @@ for( i in 1:300 ){ #Steps = 300
 }
 }
 
+op_data <- cbind(op_data, main_acc)
 
-
-
+}
+colnames(op_data) <- c("Counter","1","2","3","4")
 
 
 
