@@ -77,13 +77,15 @@ num_steps <- 300
 
 #Output data
 op_data <- data.frame(Counter=c(1:500))
+op_a <- data.frame(Counter=c(1:500))
 
 for(reg in 1:length(reg_constants)){
 
 a <- matrix(rnorm(6), nrow = 1, ncol = 6) #A
 b <- rnorm(1) #B
 main_acc <- c() 
-for(epoch in 1:50){
+main_mag <- c()
+for(epoch in 1:num_epoch){
 
 #pick out 50 numbers
 rand50 <- sample(1:nrow(train), 50 , replace = FALSE)
@@ -97,13 +99,13 @@ actual_train_labels <- train_label[-rand50] #Actual training labels
 n <- 1 / ( (0.01 * epoch) + 50 ) #Step length
 
 
-for( i in 1:300 ){ #Steps = 300
+for( i in 1:num_steps ){ #Steps = 300
   
   rand1 <- sample(1:nrow(actual_train_features),1,replace = FALSE)
   
   x <- as.matrix(actual_train_features[rand1,]) #Sample
   
-  y <- as.numeric(actual_train_labels[rand1]) #Sample Label
+  y <- as.numeric(as.character(actual_train_labels[rand1])) #Sample Label
   
   val <- y * ( ( x %*% t(a) ) + b )
   if(val >= 1){
@@ -118,14 +120,19 @@ for( i in 1:300 ){ #Steps = 300
   if(i%%30 == 0){
     temp_acc <- get_accuracy(a,b,ho_set_features, ho_set_labels)
     main_acc <- c(main_acc, temp_acc) 
+    main_mag <- c(main_mag, norm(a))
   }
 }
 }
 
 op_data <- cbind(op_data, main_acc)
+op_a <- cbind(op_a,main_mag)
 
 }
-colnames(op_data) <- c("Counter","1","2","3","4")
+colnames(op_data) <- c("Counter","V1","V2","V3","V4")
+colnames(op_a) <- c("Counter","V1","V2","V3","V4")
 
-
-
+# ggplot(data = op_data) + geom_line(aes(x = Counter, y=V1)) + geom_line(aes(x = Counter, y=V2)) + geom_line(aes(x = Counter, y=V3 )) + geom_line(aes(x = Counter, y=V4)) + scale_y_continuous(breaks = seq(0,1,0.1))
+# ggplot(data = op_a) + geom_line(aes(x = Counter, y=V1), col="blue") + 
+# geom_line(aes(x = Counter, y=V2)) + geom_line(aes(x = Counter, y=V3 )) +
+# geom_line(aes(x = Counter, y=V4)) + scale_y_continuous(breaks = seq(0,1,0.1))
