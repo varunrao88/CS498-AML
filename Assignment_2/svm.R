@@ -79,7 +79,8 @@ num_steps <- 300
 op_data <- data.frame(Counter=c(1:500))
 op_a <- data.frame(Counter=c(1:500))
 
-op_data_new <- data.frame(Epoch=c(),Acc=c(),Cat=c())
+overall_acc <- data.frame(Reg_Const=reg_constants)
+cur_acc <- c()
 
 for(reg in 1:length(reg_constants))
 {
@@ -127,20 +128,19 @@ for(reg in 1:length(reg_constants))
     }
   }
   }
-
-  cat("Accuracy for ", reg_constants[reg] , ":"  , get_accuracy(a,b,validation_set,validation_set_label), "\n", sep= " ")
+  
+  cur_acc <- c(cur_acc,get_accuracy(a,b,validation_set,validation_set_label))
   
   op_data <- cbind(op_data, main_acc)
-  
-  temp_data <- cbind(Epoch = c(1:length(main_acc)), Acc = main_acc, Cat = paste("V=",reg_constants[reg],sep=""))
-  op_data_new <- rbind(op_data_new,temp_data)
-  
   op_a <- cbind(op_a,main_mag)
 
 }
 colnames(op_data) <- c("Counter","V1","V2","V3","V4")
 colnames(op_a) <- c("Counter","V1","V2","V3","V4")
 
+overall_acc <- cbind(overall_acc,cur_acc)
+
+selected_reg_const <- overall_acc[order(overall_acc$cur_acc, decreasing = TRUE),][1,1]
 
 #Make the plots
 
@@ -156,10 +156,39 @@ plot(op_a$Counter,op_a$V1, type="l", ylim = c(0,2), col="red", xlab = "Epoch", y
 lines(op_a$Counter,op_a$V2, type="l", col="blue") 
 lines(op_a$Counter,op_a$V3, type="l", col="purple")
 lines(op_a$Counter,op_a$V4, type="l", col="black") 
-legend("topright",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Magnitude") 
+legend("topleft",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Magnitude") 
 
+#Calculate best accuracy
 
-# ggplot(data = op_data) + geom_line(aes(x = Counter, y=V1)) + geom_line(aes(x = Counter, y=V2)) + geom_line(aes(x = Counter, y=V3 )) + geom_line(aes(x = Counter, y=V4)) + scale_y_continuous(breaks = seq(0,1,0.1))
-# ggplot(data = op_a) + geom_line(aes(x = Counter, y=V1), col="blue") + 
-# geom_line(aes(x = Counter, y=V2)) + geom_line(aes(x = Counter, y=V3 )) +
-# geom_line(aes(x = Counter, y=V4)) + scale_y_continuous(breaks = seq(0,1,0.1))
+for(epoch in 1:num_epoch){
+  
+  actual_train_features <- train #Actual training features
+  actual_train_labels <- train_label #Actual training labels 
+  
+  n <- 1 / ( (0.01 * epoch) + 50 ) #Step length
+  
+  
+  for( i in 1:num_steps ){ #Steps = 300
+    
+    rand1 <- sample(1:nrow(actual_train_features),1,replace = FALSE)
+    
+    x <- as.matrix(actual_train_features[rand1,]) #Sample
+    
+    y <- as.numeric(as.character(actual_train_labels[rand1])) #Sample Label
+    
+    val <- y * ( ( x %*% t(a) ) + b )
+    if(val >= 1){
+      a <- a - (n * (selected_reg_const * a))
+      b <- b
+    }
+    else{
+      a <- a - (n * (selected_reg_const *a - (y * x)))
+      b <- b - (n * -y)
+    }
+    
+  }
+}
+
+#Get Accuracy on Initial Test set
+cat("Final Accuracy : " , get_accuracy(a,b,test,test_label), "\n")
+cat("Regularization Constant : ", selected_reg_const ,"\n")
