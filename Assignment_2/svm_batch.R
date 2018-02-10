@@ -13,7 +13,7 @@ get_accuracy <- function(a,b,data_to_check,labels_to_check){
       calc_labels <- c(calc_labels, 1)
     }
     else{
-    calc_labels <- c(calc_labels, -1)
+      calc_labels <- c(calc_labels, -1)
     }
   }
   
@@ -79,84 +79,75 @@ num_steps <- 300
 op_data <- data.frame(Counter=c(1:500))
 op_a <- data.frame(Counter=c(1:500))
 
-op_data_new <- data.frame(Epoch=c(),Acc=c(),Cat=c())
-
 for(reg in 1:length(reg_constants))
 {
-
+  
   a <- matrix(rnorm(6), nrow = 1, ncol = 6) #A
   b <- rnorm(1) #B
   main_acc <- c() 
   main_mag <- c()
   for(epoch in 1:num_epoch){
-  
-  #pick out 50 numbers
-  rand50 <- sample(1:nrow(train), 50 , replace = FALSE)
-  
-  ho_set_features <- train[rand50,] #Held out set features
-  ho_set_labels <- train_label[rand50] # Held out set labels
-  
-  actual_train_features <- train[-rand50,] #Actual training features
-  actual_train_labels <- train_label[-rand50] #Actual training labels 
-  
-  n <- 1 / ( (0.01 * epoch) + 50 ) #Step length
-  
-  
-  for( i in 1:num_steps ){ #Steps = 300
     
-    rand1 <- sample(1:nrow(actual_train_features),1,replace = FALSE)
+    #pick out 50 numbers
+    rand50 <- sample(1:nrow(train), 50 , replace = FALSE)
     
-    x <- as.matrix(actual_train_features[rand1,]) #Sample
+    ho_set_features <- train[rand50,] #Held out set features
+    ho_set_labels <- train_label[rand50] # Held out set labels
     
-    y <- as.numeric(as.character(actual_train_labels[rand1])) #Sample Label
+    actual_train_features <- train[-rand50,] #Actual training features
+    actual_train_labels <- train_label[-rand50] #Actual training labels 
     
-    val <- y * ( ( x %*% t(a) ) + b )
-    if(val >= 1){
-      a <- a - (n * (reg_constants[reg] * a))
-      b <- b
-    }
-    else{
-      a <- a - (n * (reg_constants[reg]*a - (y * x)))
-      b <- b - (n * -y)
-    }
+    n <- 1 / ( (0.01 * epoch) + 50 ) #Step length
     
-    if(i%%30 == 0){
-      temp_acc <- get_accuracy(a,b,ho_set_features, ho_set_labels)
-      main_acc <- c(main_acc, temp_acc) 
-      main_mag <- c(main_mag, norm(a))
+    
+    for( i in 1:num_steps ){ #Steps = 300
+      
+      rand10 <- sample(1:nrow(actual_train_features),batch_size,replace = FALSE)
+      
+      x10 <- actual_train_features[rand10,] #Sample
+      
+      y10 <- actual_train_labels[rand10] #Sample Label
+      
+      ca <- c()
+      cb <- c()
+      for(s_b in 1:batch_size){
+        val <- as.numeric(as.character(y10[s_b])) * ( ( as.matrix(x10[s_b,]) %*% t(a) ) + b )
+        if(val >= 1){
+          # ca <- a - (n * (reg_constants[reg] * a))
+          # b <- b
+          ca <- c(ca, reg_constants[reg] * a)
+          cb <- c(cb,0)
+        }
+        else{
+          # a <- a - (n * (reg_constants[reg]*a - (y * x)))
+          # b <- b - (n * -y)
+          ca <- c(ca, (reg_constants[reg]*a - (  as.numeric(as.character(y10[s_b])) * as.matrix(x10[s_b,]))) )
+          cb <- c(cb, - as.numeric(as.character(y10[s_b])))
+        }  
+      }
+      a <- a - n * mean(ca)
+      b <- b - n * mean(cb)
+      
+      
+      if(i%%30 == 0){
+        temp_acc <- get_accuracy(a,b,ho_set_features, ho_set_labels)
+        main_acc <- c(main_acc, temp_acc) 
+        main_mag <- c(main_mag, norm(a))
+      }
     }
   }
-  }
-
+  
   cat("Accuracy for ", reg_constants[reg] , ":"  , get_accuracy(a,b,validation_set,validation_set_label), "\n", sep= " ")
   
   op_data <- cbind(op_data, main_acc)
-  
-  temp_data <- cbind(Epoch = c(1:length(main_acc)), Acc = main_acc, Cat = paste("V=",reg_constants[reg],sep=""))
-  op_data_new <- rbind(op_data_new,temp_data)
-  
   op_a <- cbind(op_a,main_mag)
-
+  
 }
 colnames(op_data) <- c("Counter","V1","V2","V3","V4")
 colnames(op_a) <- c("Counter","V1","V2","V3","V4")
 
 
-#Make the plots
 
-par(mfrow=c(1,2))
-plot(op_data$Counter,op_data$V1, type="l", ylim = c(0,1), col="red", xlab = "Epoch", ylab="Held out Accuracy", main="Held Out Error vs Epoch") 
-lines(op_data$Counter,op_data$V2, type="l", col="blue") 
-lines(op_data$Counter,op_data$V3, type="l", col="purple")
-lines(op_data$Counter,op_data$V4, type="l", col="black") 
-legend("bottomright",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black")) 
-
-
-plot(op_a$Counter,op_a$V1, type="l", ylim = c(0,2), col="red", xlab = "Epoch", ylab="Magnitude", main="Magnitude vs Epoch") 
-lines(op_a$Counter,op_a$V2, type="l", col="blue") 
-lines(op_a$Counter,op_a$V3, type="l", col="purple")
-lines(op_a$Counter,op_a$V4, type="l", col="black") 
-legend("topright",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Magnitude") 
 
 
 # ggplot(data = op_data) + geom_line(aes(x = Counter, y=V1)) + geom_line(aes(x = Counter, y=V2)) + geom_line(aes(x = Counter, y=V3 )) + geom_line(aes(x = Counter, y=V4)) + scale_y_continuous(breaks = seq(0,1,0.1))
