@@ -145,18 +145,18 @@ selected_reg_const <- overall_acc[order(overall_acc$cur_acc, decreasing = TRUE),
 #Make the plots
 
 par(mfrow=c(1,2))
-plot(op_data$Counter,op_data$V1, type="l", ylim = c(0,1), col="red", xlab = "Epoch", ylab="Held out Accuracy", main="Held Out Error vs Epoch") 
+plot(op_data$Counter,op_data$V1, type="l", ylim = c(0,1), col="red", xlab = "Epoch", ylab="Held out Accuracy", main="Held Out Accuracy vs Epoch") 
 lines(op_data$Counter,op_data$V2, type="l", col="blue") 
 lines(op_data$Counter,op_data$V3, type="l", col="purple")
 lines(op_data$Counter,op_data$V4, type="l", col="black") 
-legend("bottomright",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black")) 
+legend("bottomright",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Reg Constants") 
 
 
 plot(op_a$Counter,op_a$V1, type="l", ylim = c(0,2), col="red", xlab = "Epoch", ylab="Magnitude", main="Magnitude vs Epoch") 
 lines(op_a$Counter,op_a$V2, type="l", col="blue") 
 lines(op_a$Counter,op_a$V3, type="l", col="purple")
 lines(op_a$Counter,op_a$V4, type="l", col="black") 
-legend("topleft",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Magnitude") 
+# legend("topleft",c("1","1e-1","1e-2","1e-3"), fill=c("red","blue","purple","black"), title="Magnitude") 
 
 #Calculate best accuracy
 
